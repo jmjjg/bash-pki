@@ -7,56 +7,58 @@ CONFIG=/etc/pki.local
 CRL=$OUT/crl
 
 # 1. Create Root CA
-mkdir -p $CA/root-ca/private $CA/root-ca/db $CRL $CERTS
-chmod 700 $CA/root-ca/private
+mkdir -p $CA/ca-root/private $CA/ca-root/db $CRL $CERTS
+chmod 700 $CA/ca-root/private
 
-cp /dev/null $CA/root-ca/db/root-ca.db
-cp /dev/null $CA/root-ca/db/root-ca.db.attr
-echo 01 > $CA/root-ca/db/root-ca.crt.srl
-echo 01 > $CA/root-ca/db/root-ca.crl.srl
+cp /dev/null $CA/ca-root/db/ca-root.db
+cp /dev/null $CA/ca-root/db/ca-root.db.attr
+echo 01 > $CA/ca-root/db/ca-root.crt.srl
+echo 01 > $CA/ca-root/db/ca-root.crl.srl
 
 export ROOT_PASSPHRASE='123456'
 
 openssl req -new \
     -passout env:ROOT_PASSPHRASE \
-    -config $CONFIG/root-ca.conf \
-    -out $CA/root-ca.csr \
-    -keyout $CA/root-ca/private/root-ca.key
+    -config $CONFIG/ca-root.conf \
+    -out $CA/ca-root.csr \
+    -keyout $CA/ca-root/private/ca-root.key
 
 openssl ca -selfsign \
+    -batch \
     -passin env:ROOT_PASSPHRASE \
-    -config $CONFIG/root-ca.conf \
-    -in $CA/root-ca.csr \
-    -out $CA/root-ca.crt \
+    -config $CONFIG/ca-root.conf \
+    -in $CA/ca-root.csr \
+    -out $CA/ca-root.crt \
     -extensions root_ca_ext
 
 # 2. Create Signing CA
-mkdir -p $CA/signing-ca/private $CA/signing-ca/db crl certs
-chmod 700 $CA/signing-ca/private
+mkdir -p $CA/ca-signing/private $CA/ca-signing/db crl certs
+chmod 700 $CA/ca-signing/private
 
-cp /dev/null $CA/signing-ca/db/signing-ca.db
-cp /dev/null $CA/signing-ca/db/signing-ca.db.attr
-echo 01 > $CA/signing-ca/db/signing-ca.crt.srl
-echo 01 > $CA/signing-ca/db/signing-ca.crl.srl
+cp /dev/null $CA/ca-signing/db/ca-signing.db
+cp /dev/null $CA/ca-signing/db/ca-signing.db.attr
+echo 01 > $CA/ca-signing/db/ca-signing.crt.srl
+echo 01 > $CA/ca-signing/db/ca-signing.crl.srl
 
 export SIGNING_PASSPHRASE='654321'
 
 openssl req -new \
     -passout env:SIGNING_PASSPHRASE \
-    -config $CONFIG/signing-ca.conf \
-    -out $CA/signing-ca.csr \
-    -keyout $CA/signing-ca/private/signing-ca.key
+    -config $CONFIG/ca-signing.conf \
+    -out $CA/ca-signing.csr \
+    -keyout $CA/ca-signing/private/ca-signing.key
 
 openssl ca \
+    -batch \
     -passin env:ROOT_PASSPHRASE \
-    -config $CONFIG/root-ca.conf \
-    -in $CA/signing-ca.csr \
-    -out $CA/signing-ca.crt \
+    -config $CONFIG/ca-root.conf \
+    -in $CA/ca-signing.csr \
+    -out $CA/ca-signing.crt \
     -extensions signing_ca_ext
 
-cat $CA/signing-ca.crt \
-    $CA/root-ca.crt \
-    > $CA/signing-ca-chain.pem
+cat $CA/ca-signing.crt \
+    $CA/ca-root.crt \
+    > $CA/ca-signing-chain.pem
 
 # 3. Operate Signing CA
 
@@ -67,13 +69,14 @@ export FRED_PASSPHRASE='a12345'
 openssl req -new \
     -passout env:FRED_PASSPHRASE \
     -subj="/DC=org/DC=simple/O=Simple Inc/CN=Fred Flintstone/emailAddress=fred@simple.org/" \
-    -config $CONFIG/email.conf \
+    -config $CONFIG/csr-email.conf \
     -out $CERTS/fred.csr \
     -keyout $CERTS/fred.key
 
 openssl ca \
+    -batch \
     -passin env:SIGNING_PASSPHRASE \
-    -config $CONFIG/signing-ca.conf \
+    -config $CONFIG/ca-signing.conf \
     -in $CERTS/fred.csr \
     -out $CERTS/fred.crt \
     -extensions email_ext
@@ -94,13 +97,14 @@ cat $CERTS/fred.key \
 ## 3.2. server
 subjectAltName=DNS:www.simple.org \
 openssl req -new \
-    -config $CONFIG/server.conf \
+    -config $CONFIG/csr-server.conf \
     -out $CERTS/simple.org.csr \
     -keyout $CERTS/simple.org.key \
     -subj="/DC=org/DC=simple/O=Simple Inc/CN=www.simple.org"
 
 openssl ca \
-    -config $CONFIG/signing-ca.conf \
+    -batch \
+    -config $CONFIG/ca-signing.conf \
     -in $CERTS/simple.org.csr \
     -out $CERTS/simple.org.crt \
     -passin env:SIGNING_PASSPHRASE \
@@ -109,8 +113,9 @@ openssl ca \
 # 3.6 Create CRL
 
 openssl ca -gencrl \
-    -config $CONFIG/signing-ca.conf \
-    -out $CRL/signing-ca.crl \
+    -batch \
+    -config $CONFIG/ca-signing.conf \
+    -out $CRL/ca-signing.crl \
     -passin env:SIGNING_PASSPHRASE
 
 ## 4. View
@@ -126,7 +131,7 @@ openssl ca -gencrl \
 #    -text
 #
 #openssl crl \
-#    -in $CRL/signing-ca.crl \
+#    -in $CRL/ca-signing.crl \
 #    -inform der \
 #    -noout \
 #    -text

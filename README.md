@@ -15,3 +15,8 @@ sudo chown -R cbuffin: . \
 sudo chown -R cbuffin: . \
     && docker-compose run app /bin/bash
 ```
+
+```bash
+sudo chown -R cbuffin: . \
+    && sudo rm -rf opt/*
+```
