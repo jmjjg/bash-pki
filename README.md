@@ -5,6 +5,11 @@
 - https://superuser.com/questions/226192/avoid-password-prompt-for-keys-and-prompts-for-dn-information
 - https://security.stackexchange.com/questions/106525/generate-csr-and-private-key-with-password-with-openssl
 
+- https://security.stackexchange.com/questions/177509/purpose-of-randfile-in-openssl
+    - `openssl rand -base64 -out randfile 666`
+- https://mta.openssl.org/pipermail/openssl-users/2017-August/006351.html
+- https://gist.github.com/Soarez/9688998
+
 ```bash
 sudo chown -R cbuffin: . \
     && docker-compose build app \
