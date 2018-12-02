@@ -1,0 +1,13 @@
+version: '2.0'
+
+services:
+    app:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        image: jmjjg-bash-pki:latest
+        volumes: [
+            "./etc/:/etc/pki.local",
+            "./opt/:/opt/pki.local",
+            "./run.sh:/root/run.sh"
+        ]
