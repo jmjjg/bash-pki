@@ -29,7 +29,7 @@ openssl ca -selfsign \
     -config $CONFIG/ca-root.conf \
     -in $CA/ca-root.csr \
     -out $CA/ca-root.crt \
-    -extensions root_ca_ext
+    -extensions ext_ca_root
 
 # 2. Create Signing CA
 mkdir -p $CA/ca-signing/private $CA/ca-signing/db crl certs
@@ -54,7 +54,7 @@ openssl ca \
     -config $CONFIG/ca-root.conf \
     -in $CA/ca-signing.csr \
     -out $CA/ca-signing.crt \
-    -extensions signing_ca_ext
+    -extensions ext_ca_signing
 
 cat $CA/ca-signing.crt \
     $CA/ca-root.crt \
@@ -79,7 +79,7 @@ openssl ca \
     -config $CONFIG/ca-signing.conf \
     -in $CERTS/fred.csr \
     -out $CERTS/fred.crt \
-    -extensions email_ext
+    -extensions ext_email
 
 openssl pkcs12 -export \
     -passin env:FRED_PASSPHRASE \
@@ -108,7 +108,7 @@ openssl ca \
     -in $CERTS/simple.org.csr \
     -out $CERTS/simple.org.crt \
     -passin env:SIGNING_PASSPHRASE \
-    -extensions server_ext
+    -extensions ext_server
 
 # 3.6 Create CRL
 
